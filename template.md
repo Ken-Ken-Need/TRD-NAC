@@ -826,6 +826,233 @@ void NTT(vector<int>& f, int d) {
 
 $x_{i+1} = x_i - \frac{f(x_i)}{f'(x_i)}$
 
-## 多项式求逆
+## 多项式求逆等
 
-$f^{-1}\left(x\right)\equiv f^{-1}{0}\left(x\right)\left(2-f\left(x\right)f^{-1}{0}\left(x\right)\right) \pmod{x^{n}}$
+```cpp
+#include <iostream>
+#include <vector>
+#include <cstring>
+#include <algorithm>
+#include <bit>
+
+#define ll long long
+
+using namespace std;
+
+const int MOD = 998244353;
+const int YG = 3;
+
+const int N = 1 << 18;
+
+ll Pow(ll a, int b) {
+    ll res = 1;
+    while (b) {
+        if (b & 1) {
+            res = res * a % MOD;
+        }
+        a = a * a % MOD;
+        b >>= 1;
+    }
+    return res;
+}
+
+ll Inv(ll a) {
+    return Pow(a, MOD - 2);
+}
+
+int n;
+
+int rev[N];
+int F[N];
+int G[N];
+int inv[N];
+
+void InitMain() {
+    inv[1] = 1;
+    for (int i = 2; i < N; i++) {
+        inv[i] = (ll)(MOD - MOD / i) * inv[MOD % i] % MOD;
+    }
+}
+
+void Init(int lim) {
+    for (int i = 1; i < lim; i++) {
+        rev[i] = rev[i >> 1] >> 1 | (i & 1) * (lim >> 1);
+    }
+}
+
+void NTT(int* f, int d, int lim) {
+    ll wn;
+    ll w;
+    int k;
+    ll p, q;
+    for (int i = 1; i < lim; i++) {
+        if (i < rev[i]) {
+            swap(f[i], f[rev[i]]);
+        }
+    }
+    for (int len = 2; len <= lim; len <<= 1) {
+        k = len >> 1;
+        wn = Pow(YG, (MOD - 1) / len);
+        for (int i = 0; i < lim; i += len) {
+            w = 1;
+            for (int j = i; j < i + k; j++) {
+                p = f[j];
+                q = f[j + k] * w % MOD;
+                f[j] = p + q;
+                if (f[j] >= MOD) {
+                    f[j] -= MOD;
+                }
+                f[j + k] = p - q;
+                if (f[j + k] < 0) {
+                    f[j + k] += MOD;
+                }
+                w = w * wn % MOD;
+            }
+        }
+    }
+    if (d == -1) {
+        reverse(f + 1, f + lim);
+        ll inv = Inv(lim);
+        for (int i = 0; i < lim; i++) {
+            f[i] = f[i] * inv % MOD;
+        }
+    }
+}
+
+// fg = 1
+// fg - 1 = 0
+// f - 1 / g = 0
+// g = g - (f - 1 / g) / (1 / g ^ 2) = 2g - fg ^ 2 = g(2 - fg)
+
+int cur1[N];
+int cur2[N];
+
+void Inv(int* f, int* g, int lim) {
+    g[0] = Inv(f[0]);
+    for (int len = 2; len <= lim; len <<= 1) {
+        int k = len << 1;
+        int s = len >> 1;
+        memcpy(cur1, f, len * sizeof(int));
+        memset(cur1 + len, 0, len * sizeof(int));
+        memcpy(cur2, g, s * sizeof(int));
+        memset(cur2 + s, 0, (k - s) * sizeof(int));
+        Init(k);
+        NTT(cur1, 1, k);
+        NTT(cur2, 1, k);
+        for (int i = 0; i < k; i++) {
+            g[i] = cur2[i] * (2 + MOD - (ll)cur1[i] * cur2[i] % MOD) % MOD;
+        }
+        NTT(g, -1, k);
+    }
+}
+
+// g ^ 2 = f
+// g ^ 2 - f = 0
+// g = g - (g ^ 2 - f) / 2g = (g ^ 2 + f) / 2g
+
+int cur3[N];
+
+void Sqrt(int* f, int* g, int lim) {
+    g[0] = 1;
+    for (int len = 2; len <= lim; len <<= 1) {
+        int k = len << 1;
+        int s = len >> 1;
+        memset(g + s, 0, s * sizeof(int));
+        Inv(g, cur3, len);
+        memset(cur3 + len, 0, len * sizeof(int));
+        memcpy(cur1, f, len * sizeof(int));
+        memset(cur1 + len, 0, len * sizeof(int));
+        memcpy(cur2, g, s * sizeof(int));
+        memset(cur2 + s, 0, (k - s) * sizeof(int));
+        Init(k);
+        NTT(cur1, 1, k);
+        NTT(cur2, 1, k);
+        NTT(cur3, 1, k);
+        for (int i = 0; i < k; i++) {
+            g[i] = ((ll)cur2[i] * cur2[i] + cur1[i]) % MOD * ((MOD + 1) / 2) % MOD * cur3[i] % MOD;
+        }
+        NTT(g, -1, k);
+    }
+}
+
+void Derivative(int* f, int* g, int lim) {
+    for (int i = 1; i < lim; i++) {
+        g[i - 1] = (ll)f[i] * i % MOD;
+    }
+    g[lim - 1] = 0;
+}
+
+void Integrate(int* f, int* g, int lim) {
+    g[0] = 0;
+    for (int i = 1; i < lim; i++) {
+        g[i] = (ll)f[i - 1] * inv[i] % MOD;
+    }
+}
+
+// g = ln(f)
+// dg = df / f
+// g = int(df / f)
+
+void Ln(int* f, int* g, int lim) {
+    int k = lim << 1;
+    Inv(f, cur3, lim);
+    memset(cur3 + lim, 0, lim * sizeof(int));
+    Derivative(f, cur1, lim);
+    memset(cur1 + lim, 0, lim * sizeof(int));
+    Init(k);
+    NTT(cur3, 1, k);
+    NTT(cur1, 1, k);
+    for (int i = 0; i < k; i++) {
+        cur1[i] = (ll)cur1[i] * cur3[i] % MOD;
+    }
+    NTT(cur1, -1, k);
+    Integrate(cur1, g, lim);
+}
+
+// g = e ^ f
+// lng - f = 0
+// g = g - (lng - f) / (1 / g) = g(1 - lng + f)
+
+void Exp(int* f, int* g, int lim) {
+    g[0] = 1;
+    for (int len = 2; len <= lim; len <<= 1) {
+        int k = len << 1;
+        int s = len >> 1;
+        memset(g + s, 0, s * sizeof(int));
+        Ln(g, cur3, len);
+        memset(cur3 + len, 0, len * sizeof(int));
+        memcpy(cur1, f, len * sizeof(int));
+        memset(cur1 + len, 0, len * sizeof(int));
+        memcpy(cur2, g, s * sizeof(int));
+        memset(cur2 + s, 0, (k - s) * sizeof(int));
+        Init(k);
+        NTT(cur1, 1, k);
+        NTT(cur2, 1, k);
+        NTT(cur3, 1, k);
+        for (int i = 0; i < k; i++) {
+            g[i] = (ll)cur2[i] * (MOD + 1 - cur3[i] + cur1[i]) % MOD;
+        }
+        NTT(g, -1, k);
+    }
+}
+
+void Solve() {
+    cin >> n;
+    int lim = bit_ceil((unsigned)n);
+    for (int i = 0; i < n; i++) {
+        cin >> F[i];
+    }
+    Exp(F, G, lim);
+    for (int i = 0; i < n; i++) {
+        cout << G[i] << ' ';
+    }
+}
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    InitMain();
+    Solve();
+    return 0;
+}
+```
