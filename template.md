@@ -765,3 +765,63 @@ int main() {
     return 0;
 }
 ```
+
+## NTT
+
+```cpp
+void Init() {
+    while (N <= n + m) {
+        N <<= 1;
+    }
+    rev.resize(N);
+    F.resize(N);
+    G.resize(N);
+    FG.resize(N);
+    for (int i = 1; i < N; i++) {
+        rev[i] = rev[i >> 1] >> 1 | (i & 1) * (N >> 1);
+    }
+}
+
+void NTT(vector<int>& f, int d) {
+    ll wn;
+    ll w;
+    int k;
+    ll p, q;
+    for (int i = 1; i < N; i++) {
+        if (i < rev[i]) {
+            swap(f[i], f[rev[i]]);
+        }
+    }
+    for (int len = 2; len <= N; len <<= 1) {
+        k = len >> 1;
+        wn = Pow(YG, (MOD - 1) / len);
+        for (int i = 0; i < N; i += len) {
+            w = 1;
+            for (int j = i; j < i + k; j++) {
+                p = f[j];
+                q = f[j + k] * w % MOD;
+                f[j] = p + q;
+                if (f[j] >= MOD) {
+                    f[j] -= MOD;
+                }
+                f[j + k] = p - q;
+                if (f[j + k] < 0) {
+                    f[j + k] += MOD;
+                }
+                w = w * wn % MOD;
+            }
+        }
+    }
+    if (d == -1) {
+        reverse(f.begin() + 1, f.end());
+        ll inv = Inv(N);
+        for (int i = 0; i < N; i++) {
+            f[i] = f[i] * inv % MOD;
+        }
+    }
+}
+```
+
+## 牛顿迭代
+
+$x_{i+1} = x_i - \frac{f(x_i)}{f'(x_i)}$
