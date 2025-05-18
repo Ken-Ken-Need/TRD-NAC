@@ -596,3 +596,43 @@ int main() {
 }
 ```
 
+## Lyndon 分解
+```cpp []
+#include <iostream>
+
+using namespace std;
+
+int res;
+string s;
+int n;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(0);
+    cin >> s;
+    n = s.length();
+    int i = 0, j = 0, k = 1;
+    while (i < n) {
+        while (k < n && s[k] >= s[j]) {
+            if (s[k] == s[j]) {
+                j++;
+            }
+            else {
+                j = i;
+            }
+            k++;
+        }
+        while (i <= j) {
+            i = min(n, i + k - j);
+            // cout << i << ',' << j << ',' << k << endl;
+            res ^= i;
+        }
+        // cout << i << ',' << j << ',' << k << endl;
+        j = i;
+        k = i + 1;
+        continue;
+    }
+    cout << res;
+    return 0;
+}
+```
