@@ -825,3 +825,7 @@ void NTT(vector<int>& f, int d) {
 ## 牛顿迭代
 
 $x_{i+1} = x_i - \frac{f(x_i)}{f'(x_i)}$
+
+## 多项式求逆
+
+$f^{-1}\left(x\right)\equiv f^{-1}{0}\left(x\right)\left(2-f\left(x\right)f^{-1}{0}\left(x\right)\right) \pmod{x^{n}}$
