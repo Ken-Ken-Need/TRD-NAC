@@ -636,3 +636,132 @@ int main() {
     return 0;
 }
 ```
+
+## SAM 后缀自动机
+
+```cpp
+class Solution {
+    struct Node {
+        array<int, 26> nxt;
+        int len = 0;
+        int link = -1;
+        Node() { nxt.fill(-1); }
+    };
+    vector<Node> nodes;
+    int last;
+    void Init() {
+        nodes = {{}};
+        last = 0;
+    }
+    void Insert(int c) {
+        int cur = nodes.size();
+        nodes.emplace_back();
+        nodes[cur].len = nodes[last].len + 1;
+        int p = last;
+        while (p != -1 && nodes[p].nxt[c] == -1) {
+            nodes[p].nxt[c] = cur;
+            p = nodes[p].link;
+        }
+        if (p == -1) {
+            nodes[cur].link = 0;
+        } else {
+            int q = nodes[p].nxt[c];
+            if (nodes[q].len == nodes[p].len + 1) {
+                nodes[cur].link = q;
+            } else {
+                int clone = nodes.size();
+                nodes.push_back(nodes[q]);
+                nodes[clone].len = nodes[p].len + 1;
+                nodes[cur].link = clone;
+                nodes[q].link = clone;
+                while (p != -1 && nodes[p].nxt[c] == q) {
+                    nodes[p].nxt[c] = clone;
+                    p = nodes[p].link;
+                }
+            }
+        }
+        last = cur;
+    }
+    bool Match(const string& s) {
+        int cur = 0;
+        for (const auto& c : s) {
+            cur = nodes[cur].nxt[c - 'a'];
+            if (cur == -1) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+public:
+    int numOfStrings(vector<string>& patterns, const string& word) {
+        Init();
+        for (const auto& c : word) {
+            Insert(c - 'a');
+        }
+        int res = 0;
+        for (const auto& s : patterns) {
+            res += Match(s);
+        }
+        return res;
+    }
+};
+```
+
+## PAM 回文自动机
+
+```cpp
+#include <iostream>
+#include <unordered_map>
+
+using namespace std;
+
+struct Node {
+    int len = 0;
+    Node* fail = nullptr;
+    unordered_map<char, Node*> nxt;
+    int cnt = 0;
+};
+
+string s;
+
+int k = 0;
+Node* ji = new Node({ -1 });
+Node* ou = new Node({ 0, ji });
+Node* last = ou;
+Node* cur = ji;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    cin >> s;
+    for (int i = 0; i < s.length(); i++) {
+        char c = (s[i] - 97 + k) % 26 + 97;
+        s[i] = c;
+        while (i - last->len <= 0 || s[i - last->len - 1] != c) {
+            last = last->fail;
+        }
+        auto it = last->nxt.find(c);
+        if (it == last->nxt.end()) {
+            it = last->nxt.insert({ c, new Node({last->len + 2, nullptr, {}, 0}) }).first;
+        }
+        while (i - cur->len <= 0 || s[i - cur->len - 1] != c) {
+            cur = cur->fail;
+        }
+        if (cur == last) {
+            cur = cur->fail;
+            if (cur) {
+                while (i - cur->len <= 0 || s[i - cur->len - 1] != c) {
+                    cur = cur->fail;
+                }
+            }
+        }
+        cur = cur ? cur->nxt[c] : ou;
+        last = it->second;
+        last->fail = cur;
+        k = last->cnt = cur->cnt + 1;
+        cout << k << ' ';
+    }
+    return 0;
+}
+```
