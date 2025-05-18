@@ -1,5 +1,5 @@
 ## FHQ Treap - 范浩强
-```
+```cpp
 mt19937 myRand(chrono::steady_clock::now().time_since_epoch().count());
 
 struct Node
@@ -159,7 +159,7 @@ int m;
 ```
 
 ## Cost Flow - 费用流
-```
+```cpp
 const int INF = 0x3f3f3f3f;
 
 const int MAXN = 8000;
@@ -291,7 +291,7 @@ void Dinic()
 ```
 
 ## LCT
-```
+```cpp
 const int MAXN = 100010;
 
 int n;
@@ -488,7 +488,7 @@ void Link(int a, int b)
 ```
 
 ## SA 后缀数组
-```
+```cpp
 #include <iostream>
 #include <vector>
 
@@ -597,7 +597,7 @@ int main() {
 ```
 
 ## Lyndon 分解
-```cpp []
+```cpp
 #include <iostream>
 
 using namespace std;
